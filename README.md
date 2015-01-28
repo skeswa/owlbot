@@ -1,2 +1,2 @@
 # owlbot
-The harbringer of the owl pun apocalypse.
+The harbinger of the owl pun apocalypse.
