@@ -3,14 +3,17 @@ package main
 import (
 	"errors"
 	"github.com/ChimeraCoder/anaconda"
+	"log"
+	"net/url"
 	"os"
+	"strconv"
 )
 
 type TwitterConnector struct {
-	api TwitterApi
+	api *anaconda.TwitterApi
 }
 
-func NewTwitterConnector() (error, TwitterConnector) {
+func NewTwitterConnector() (error, *TwitterConnector) {
 	var (
 		consumerSecret    string
 		consumerKey       string
@@ -42,8 +45,46 @@ func NewTwitterConnector() (error, TwitterConnector) {
 		api: anaconda.NewTwitterApi(accessToken, accessTokenSecret),
 	}
 	// Return the connector
-	return nil, tc
+	return nil, &tc
 }
 
-func (tc TwitterConnector) findOwlableTweets() {
+func (tc *TwitterConnector) listenForTweets() error {
+	// Create parameters for the request
+	params := url.Values{}
+	params.Set("track", "#owlhacks2015")
+	// Get dat stream
+	stream, err := tc.api.PublicStreamFilter(params)
+	if err != nil {
+		return err
+	} else {
+		for {
+			select {
+			case incomingStreamItem := <-stream.C:
+				tc.handleIncomingTweet(incomingStreamItem)
+			}
+		}
+	}
+}
+
+func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
+	tweet, ok := potentialTweet.(anaconda.Tweet)
+	if ok {
+		tweetText := tweet.Text
+		tweetId := tweet.Id
+		from := tweet.User.Name
+		responseTweet := punify(tweetText)
+		// Favorite the tweet
+		tc.api.Favorite(tweetId)
+		// Send the response
+		params := url.Values{}
+		params.Set("in_reply_to_status_id", strconv.FormatInt(tweetId, 10))
+		_, err := tc.api.PostTweet("More like \""+responseTweet+"\" #owled", params)
+		if err != nil {
+			log.Fatalln("Could not post a reply:", err)
+		} else {
+			log.Println("New tweet from \"" + from + "\":\n-> \"" + tweetText + "\"\n<- \"" + responseTweet + "\"")
+		}
+	} else {
+		log.Println("Could not read the tweet")
+	}
 }
