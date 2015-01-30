@@ -69,20 +69,25 @@ func (tc *TwitterConnector) listenForTweets() error {
 func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 	tweet, ok := potentialTweet.(anaconda.Tweet)
 	if ok {
-		tweetText := tweet.Text
-		tweetId := tweet.Id
-		from := tweet.User.Name
-		responseTweet := punify(tweetText)
-		// Favorite the tweet
-		tc.api.Favorite(tweetId)
-		// Send the response
-		params := url.Values{}
-		params.Set("in_reply_to_status_id", strconv.FormatInt(tweetId, 10))
-		_, err := tc.api.PostTweet("More like \""+responseTweet+"\" #owled", params)
-		if err != nil {
-			log.Fatalln("Could not post a reply:", err)
-		} else {
-			log.Println("New tweet from \"" + from + "\":\n-> \"" + tweetText + "\"\n<- \"" + responseTweet + "\"")
+		fromHandle := tweet.User.ScreenName
+		if fromHandle != "owlhacks" {
+			tweetText := tweet.Text
+			responseTweet, isPunified := punify(tweetText)
+			if isPunified {
+				tweetId := tweet.Id
+				fromName := tweet.User.Name
+				// Favorite the tweet
+				tc.api.Favorite(tweetId)
+				// Send the response
+				params := url.Values{}
+				params.Set("in_reply_to_status_id", strconv.FormatInt(tweetId, 10))
+				_, err := tc.api.PostTweet("@"+fromHandle+" \""+responseTweet+"\" #owled", params)
+				if err != nil {
+					log.Fatalln("Could not post a reply:", err)
+				} else {
+					log.Println("New tweet from " + fromName + ":\n-> \"" + tweetText + "\"\n<- \"" + responseTweet + "\"")
+				}
+			}
 		}
 	} else {
 		log.Println("Could not read the tweet")
