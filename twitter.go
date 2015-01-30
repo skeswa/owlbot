@@ -51,7 +51,7 @@ func NewTwitterConnector() (error, *TwitterConnector) {
 func (tc *TwitterConnector) listenForTweets() error {
 	// Create parameters for the request
 	params := url.Values{}
-	params.Set("track", "#owlhacks,#owlhacks2015")
+	params.Set("track", "#owlhacks,#owlhacks2015,#hackathons")
 	// Get dat stream
 	stream, err := tc.api.PublicStreamFilter(params)
 	if err != nil {
@@ -71,13 +71,15 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 	if ok {
 		fromHandle := tweet.User.ScreenName
 		if fromHandle != "owlhacks" {
+			tweetId := tweet.Id
 			tweetText := tweet.Text
 			responseTweet, isPunified := punify(tweetText)
+			// Favorite the tweet
+			tc.api.Favorite(tweetId)
+			// Only if we could figure out a punified version of the tweet, continue
 			if isPunified {
 				tweetId := tweet.Id
 				fromName := tweet.User.Name
-				// Favorite the tweet
-				tc.api.Favorite(tweetId)
 				// Send the response
 				params := url.Values{}
 				params.Set("in_reply_to_status_id", strconv.FormatInt(tweetId, 10))
