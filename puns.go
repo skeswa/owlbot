@@ -51,7 +51,7 @@ func punify(text string) (string, bool) {
 	// Trim the tweet
 	punifiedText = strings.TrimSpace(punifiedText)
 	// Check if there's an owl pun
-	if replaceCount >= OWL_REPLACEMENT_LIMIT {
+	if replaceCount > 0 {
 		return punifiedText, true
 	} else {
 		return "", false
