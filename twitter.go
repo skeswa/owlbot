@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type TwitterConnector struct {
@@ -51,7 +52,7 @@ func NewTwitterConnector() (error, *TwitterConnector) {
 func (tc *TwitterConnector) listenForTweets() error {
 	// Create parameters for the request
 	params := url.Values{}
-	params.Set("track", "#owlhacks,#owlhacks2015,#hackathons,#hackcon,#hackru")
+	params.Set("track", "#owlhacks,#owlhacks2015,hackathons,#hackcon,#hackru")
 	// Get dat stream
 	stream, err := tc.api.PublicStreamFilter(params)
 	if err != nil {
@@ -74,9 +75,11 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			tweetId := tweet.Id
 			tweetText := tweet.Text
 			responseTweet, isPunified := punify(tweetText)
-			// Favorite the tweet
-			tc.api.Favorite(tweetId)
-			log.Println("Favorited tweet from @" + fromHandle)
+			// Favorite the tweet if its about Owlhacks
+			if strings.Contains(tweetText, "owlhacks") && strings.Contains(tweetText, "Owlhacks") {
+				tc.api.Favorite(tweetId)
+				log.Println("Favorited tweet from @" + fromHandle)
+			}
 			// Only if we could figure out a punified version of the tweet, continue
 			if isPunified {
 				tweetId := tweet.Id
