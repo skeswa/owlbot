@@ -32,10 +32,26 @@ func punify(text string) (string, bool) {
 		punifiedText = strings.Replace(punifiedText, "I'll", "OWL", 1)
 		replaceCount += 1
 	}
+	if strings.Contains(punifiedText, "about") && replaceCount < OWL_REPLACEMENT_LIMIT {
+		punifiedText = strings.Replace(punifiedText, "about", "OWLbout", 1)
+		replaceCount += 1
+	}
+	if strings.Contains(punifiedText, "About") && replaceCount < OWL_REPLACEMENT_LIMIT {
+		punifiedText = strings.Replace(punifiedText, "About", "OWLbout", 1)
+		replaceCount += 1
+	}
+	if strings.Contains(punifiedText, "who") && replaceCount < OWL_REPLACEMENT_LIMIT {
+		punifiedText = strings.Replace(punifiedText, "who", "hoot", 1)
+		replaceCount += 1
+	}
+	if strings.Contains(punifiedText, "Who") && replaceCount < OWL_REPLACEMENT_LIMIT {
+		punifiedText = strings.Replace(punifiedText, "Who", "Hoot", 1)
+		replaceCount += 1
+	}
 	// Trim the tweet
 	punifiedText = strings.TrimSpace(punifiedText)
 	// Check if there's an owl pun
-	if strings.Contains(punifiedText, "OWL") {
+	if replaceCount >= OWL_REPLACEMENT_LIMIT {
 		return punifiedText, true
 	} else {
 		return "", false

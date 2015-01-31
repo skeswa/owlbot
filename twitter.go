@@ -51,7 +51,7 @@ func NewTwitterConnector() (error, *TwitterConnector) {
 func (tc *TwitterConnector) listenForTweets() error {
 	// Create parameters for the request
 	params := url.Values{}
-	params.Set("track", "#owlhacks,#owlhacks2015,#hackathons")
+	params.Set("track", "#owlhacks,#owlhacks2015,#hackathons,#hackcon,#hackru")
 	// Get dat stream
 	stream, err := tc.api.PublicStreamFilter(params)
 	if err != nil {
@@ -76,6 +76,7 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			responseTweet, isPunified := punify(tweetText)
 			// Favorite the tweet
 			tc.api.Favorite(tweetId)
+			log.Println("Favorited tweet from @" + fromHandle)
 			// Only if we could figure out a punified version of the tweet, continue
 			if isPunified {
 				tweetId := tweet.Id
@@ -85,9 +86,9 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 				params.Set("in_reply_to_status_id", strconv.FormatInt(tweetId, 10))
 				_, err := tc.api.PostTweet("@"+fromHandle+" \""+responseTweet+"\" #owled", params)
 				if err != nil {
-					log.Fatalln("Could not post a reply:", err)
+					log.Println("Could not post a reply:", err)
 				} else {
-					log.Println("New tweet from " + fromName + ":\n-> \"" + tweetText + "\"\n<- \"" + responseTweet + "\"")
+					log.Println("New tweet from " + fromName + ":\n-> \"" + tweetText + "\"\n<- \"" + responseTweet + "\"\n")
 				}
 			}
 		}
