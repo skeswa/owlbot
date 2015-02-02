@@ -4,10 +4,16 @@ import (
 	"errors"
 	"github.com/ChimeraCoder/anaconda"
 	"log"
+	"math/rand"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
+)
+
+const (
+	MAX_REPLY_DELAY_MS = 300000 // 5 minutes
 )
 
 type TwitterConnector struct {
@@ -52,7 +58,7 @@ func NewTwitterConnector() (error, *TwitterConnector) {
 func (tc *TwitterConnector) listenForTweets() error {
 	// Create parameters for the request
 	params := url.Values{}
-	params.Set("track", "#owlhacks,#owlhacks2015,hackathons,#hackru")
+	params.Set("track", "#owlhacks,#owlhacks2015,hackathons,#hackru,#HackCWRU")
 	// Get dat stream
 	stream, err := tc.api.PublicStreamFilter(params)
 	if err != nil {
@@ -60,8 +66,13 @@ func (tc *TwitterConnector) listenForTweets() error {
 	} else {
 		for {
 			select {
-			case incomingStreamItem := <-stream.C:
-				tc.handleIncomingTweet(incomingStreamItem)
+			case incomingStreamItem, ok := <-stream.C:
+				if ok {
+					// TODO make goroutines work
+					tc.handleIncomingTweet(incomingStreamItem)
+				} else {
+					log.Fatalln("The stream closed suddenly :(")
+				}
 			}
 		}
 	}
@@ -71,12 +82,16 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 	tweet, ok := potentialTweet.(anaconda.Tweet)
 	if ok {
 		fromHandle := tweet.User.ScreenName
-		if fromHandle != "owlhacks" {
+		isNotRetweet := (tweet.RetweetedStatus == nil)
+		if fromHandle != "owlhacks" && isNotRetweet {
 			tweetId := tweet.Id
 			tweetText := tweet.Text
 			responseTweet, isPunified := punify(tweetText)
+			// Prepare a random wait time, to create some drama
+			waitTime := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(MAX_REPLY_DELAY_MS)
+			time.Sleep(time.Duration(waitTime) * time.Millisecond)
 			// Favorite the tweet if its about Owlhacks
-			if strings.Contains(tweetText, "owlhacks") && strings.Contains(tweetText, "Owlhacks") {
+			if strings.Contains(tweetText, "owlhacks") || strings.Contains(tweetText, "Owlhacks") {
 				tc.api.Favorite(tweetId)
 				log.Println("Favorited tweet from @" + fromHandle)
 			}

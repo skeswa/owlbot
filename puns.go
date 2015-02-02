@@ -9,6 +9,7 @@ const (
 )
 
 var (
+	// Replacements that cause puns
 	replacementMap = map[string]string{
 		"all":   "OWL",
 		"All":   "OWL",
@@ -18,6 +19,10 @@ var (
 		"I'll":  "OWL",
 		"about": "abHOOT",
 		"About": "AbHOOT",
+	}
+	// Black-listed puns
+	exceptionMap = map[string]string{
+		"reOWL": "real",
 	}
 )
 
@@ -31,7 +36,18 @@ func punify(text string) (string, bool) {
 			replaceCount += 1
 
 			if replaceCount > OWL_REPLACEMENT_LIMIT {
-				return punifiedText, true
+				break
+			}
+		}
+	}
+
+	for what, with := range exceptionMap {
+		if strings.Contains(punifiedText, what) {
+			punifiedText = strings.Replace(punifiedText, what, with, -1)
+			replaceCount -= 1
+
+			if replaceCount <= 0 {
+				break
 			}
 		}
 	}
