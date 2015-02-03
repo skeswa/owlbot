@@ -139,6 +139,7 @@ func (tc *TwitterConnector) hang() int64 {
 	// Returns time waited
 	waitTime := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(MAX_REPLY_DELAY_MS) + MIN_REPLY_DELAY_MS
 	time.Sleep(time.Duration(waitTime) * time.Millisecond)
+	return waitTime
 }
 
 func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
@@ -157,8 +158,9 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			if strings.Contains(tweetText, "owlhacks") || strings.Contains(tweetText, "Owlhacks") {
 				if !hasWaited {
 					// Prepare a random wait time, to create some drama
+					log.Println("Waiting to respond to @" + fromHandle + "...")
 					waitTime := tc.hang()
-					log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle + "...")
+					log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle)
 					hasWaited = true
 				}
 
@@ -171,8 +173,9 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			if isPunified {
 				if !hasWaited {
 					// Prepare a random wait time, to create some drama
+					log.Println("Waiting to respond to @" + fromHandle + "...")
 					waitTime := tc.hang()
-					log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle + "...")
+					log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle)
 					hasWaited = true
 				}
 
