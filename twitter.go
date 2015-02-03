@@ -74,7 +74,7 @@ func NewTwitterConnector() (error, *TwitterConnector) {
 func (tc *TwitterConnector) listenForTweets() {
 	// Create parameters for the request
 	params := url.Values{}
-	params.Set("track", "owlhacks,#owlhacks2015,hackathon,hackathons,hackru,hackcwru,mlh")
+	params.Set("track", "owlhacks,#owlhacks2015,hackathon,hackathons,hackru,hackcwru,@MLHacks")
 	// Get dat stream
 	stream, err := tc.api.PublicStreamFilter(params)
 	if err != nil {
