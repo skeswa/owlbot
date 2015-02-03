@@ -135,7 +135,14 @@ func (tc *TwitterConnector) sendFavorites() {
 	}
 }
 
+func (tc *TwitterConnector) hang() int64 {
+	// Returns time waited
+	waitTime := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(MAX_REPLY_DELAY_MS) + MIN_REPLY_DELAY_MS
+	time.Sleep(time.Duration(waitTime) * time.Millisecond)
+}
+
 func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
+	hasWaited := false
 	tweet, ok := potentialTweet.(anaconda.Tweet)
 	if ok {
 		fromHandle := tweet.User.ScreenName
@@ -144,12 +151,17 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			tweetId := tweet.Id
 			tweetText := tweet.Text
 			responseTweet, isPunified := punify(tweetText)
-			// Prepare a random wait time, to create some drama
-			waitTime := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(MAX_REPLY_DELAY_MS) + MIN_REPLY_DELAY_MS
-			log.Println("Waiting about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle + "...")
-			time.Sleep(time.Duration(waitTime) * time.Millisecond)
+
+			log.Println("Incoming tweet from @" + fromHandle)
 			// Favorite the tweet if its about Owlhacks
 			if strings.Contains(tweetText, "owlhacks") || strings.Contains(tweetText, "Owlhacks") {
+				if !hasWaited {
+					// Prepare a random wait time, to create some drama
+					waitTime := tc.hang()
+					log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle + "...")
+					hasWaited = true
+				}
+
 				tc.outgoingFaves <- Favorite{
 					senderHandle:    fromHandle,
 					originalTweetId: tweetId,
@@ -157,6 +169,13 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			}
 			// Only if we could figure out a punified version of the tweet, continue
 			if isPunified {
+				if !hasWaited {
+					// Prepare a random wait time, to create some drama
+					waitTime := tc.hang()
+					log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle + "...")
+					hasWaited = true
+				}
+
 				tweetId := tweet.Id
 				// Send the response
 				tc.outgoingReplies <- Reply{
