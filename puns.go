@@ -23,6 +23,7 @@ var (
 	// Black-listed puns
 	exceptionMap = map[string]string{
 		"reOWL": "real",
+		"tOWLk": "talk",
 	}
 )
 
