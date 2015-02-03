@@ -74,7 +74,7 @@ func NewTwitterConnector() (error, *TwitterConnector) {
 func (tc *TwitterConnector) listenForTweets() {
 	// Create parameters for the request
 	params := url.Values{}
-	params.Set("track", "#owlhacks,#owlhacks2015,hackathon,hackathons,#hackru,#hackcwru")
+	params.Set("track", "owlhacks,#owlhacks2015,hackathon,hackathons,hackru,hackcwru")
 	// Get dat stream
 	stream, err := tc.api.PublicStreamFilter(params)
 	if err != nil {
@@ -171,21 +171,30 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			}
 			// Only if we could figure out a punified version of the tweet, continue
 			if isPunified {
-				if !hasWaited {
-					// Prepare a random wait time, to create some drama
-					log.Println("Waiting to respond to @" + fromHandle + "...")
-					waitTime := tc.hang()
-					log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle)
-					hasWaited = true
-				}
+				tweetText := "@" + fromHandle + " \"" + responseTweet + "\" #owled"
+				if len(tweetText) <= 140 {
+					if !hasWaited {
+						// Prepare a random wait time, to create some drama
+						log.Println("Waiting to respond to @" + fromHandle + "...")
+						waitTime := tc.hang()
+						log.Println("Waited about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle)
+						hasWaited = true
+					}
 
-				tweetId := tweet.Id
-				// Send the response
-				tc.outgoingReplies <- Reply{
-					tweetText:       ("@" + fromHandle + " \"" + responseTweet + "\" #owled"),
-					senderHandle:    fromHandle,
-					originalTweetId: strconv.FormatInt(tweetId, 10),
+					tweetId := tweet.Id
+					// Send the response
+					tc.outgoingReplies <- Reply{
+						tweetText:       tweetText,
+						senderHandle:    fromHandle,
+						originalTweetId: strconv.FormatInt(tweetId, 10),
+					}
+				} else {
+					log.Println("Our response to @" + fromHandle + "'s tweet was too long (" + strconv.Itoa(len(tweetText)) + ")")
 				}
+			}
+			// If we haven't waited yet, the tweet was ignored
+			if !hasWaited {
+				log.Println("@" + fromHandle + "'s tweet was ignored")
 			}
 		}
 	} else {
