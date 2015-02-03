@@ -13,11 +13,25 @@ import (
 )
 
 const (
-	MAX_REPLY_DELAY_MS = 300000 // 5 minutes
+	MIN_REPLY_DELAY_MS = 120000 // Should be 2 minutes
+	MAX_REPLY_DELAY_MS = 300000 // Should be 5 minutes
 )
 
+type Reply struct {
+	tweetText       string
+	senderHandle    string
+	originalTweetId string
+}
+
+type Favorite struct {
+	senderHandle    string
+	originalTweetId int64
+}
+
 type TwitterConnector struct {
-	api *anaconda.TwitterApi
+	api             *anaconda.TwitterApi
+	outgoingFaves   chan Favorite
+	outgoingReplies chan Reply
 }
 
 func NewTwitterConnector() (error, *TwitterConnector) {
@@ -49,30 +63,73 @@ func NewTwitterConnector() (error, *TwitterConnector) {
 	anaconda.SetConsumerKey(consumerKey)
 	anaconda.SetConsumerSecret(consumerSecret)
 	tc := TwitterConnector{
-		api: anaconda.NewTwitterApi(accessToken, accessTokenSecret),
+		api:             anaconda.NewTwitterApi(accessToken, accessTokenSecret),
+		outgoingReplies: make(chan Reply),
+		outgoingFaves:   make(chan Favorite),
 	}
 	// Return the connector
 	return nil, &tc
 }
 
-func (tc *TwitterConnector) listenForTweets() error {
+func (tc *TwitterConnector) listenForTweets() {
 	// Create parameters for the request
 	params := url.Values{}
 	params.Set("track", "#owlhacks,#owlhacks2015,hackathon,hackathons,#hackru,#hackcwru")
 	// Get dat stream
 	stream, err := tc.api.PublicStreamFilter(params)
 	if err != nil {
-		return err
+		log.Println("Could not start the twitter listener:\n\t", err)
+		return
 	} else {
 		for {
 			select {
 			case incomingStreamItem, ok := <-stream.C:
 				if ok {
-					// TODO make goroutines work
-					tc.handleIncomingTweet(incomingStreamItem)
+					go tc.handleIncomingTweet(incomingStreamItem)
 				} else {
-					log.Fatalln("The stream closed suddenly :(")
+					log.Fatalln("The tweet stream closed suddenly")
 				}
+			}
+		}
+	}
+}
+
+func (tc *TwitterConnector) sendReplies() {
+	for {
+		select {
+		case reply, ok := <-tc.outgoingReplies:
+			if ok {
+				params := url.Values{}
+				params.Set("in_reply_to_status_id", reply.originalTweetId)
+				_, err := tc.api.PostTweet(reply.tweetText, params)
+
+				if err == nil {
+					log.Println("Replied to @" + reply.senderHandle + "'s tweet")
+				} else {
+					if strings.Contains(err.Error(), "Status is over 140") {
+						log.Println("Could not reply to @" + reply.senderHandle + "'s tweet, because the reply was too long.")
+					} else {
+						log.Println("Could not reply to @" + reply.senderHandle + "'s tweet:\n->\t" + err.Error())
+					}
+				}
+			} else {
+				log.Println("The outgoing replies buffer closed")
+				return
+			}
+		}
+	}
+}
+
+func (tc *TwitterConnector) sendFavorites() {
+	for {
+		select {
+		case fave, ok := <-tc.outgoingFaves:
+			if ok {
+				tc.api.Favorite(fave.originalTweetId)
+				log.Println("Tweet from @" + fave.senderHandle + " favorited")
+			} else {
+				log.Println("The outgoing favorites buffer closed")
+				return
 			}
 		}
 	}
@@ -88,25 +145,24 @@ func (tc *TwitterConnector) handleIncomingTweet(potentialTweet interface{}) {
 			tweetText := tweet.Text
 			responseTweet, isPunified := punify(tweetText)
 			// Prepare a random wait time, to create some drama
-			waitTime := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(MAX_REPLY_DELAY_MS)
+			waitTime := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(MAX_REPLY_DELAY_MS) + MIN_REPLY_DELAY_MS
+			log.Println("Waiting about " + strconv.FormatInt((waitTime/60000), 10) + " minutes to respond to @" + fromHandle + "...")
 			time.Sleep(time.Duration(waitTime) * time.Millisecond)
 			// Favorite the tweet if its about Owlhacks
 			if strings.Contains(tweetText, "owlhacks") || strings.Contains(tweetText, "Owlhacks") {
-				tc.api.Favorite(tweetId)
-				log.Println("Favorited tweet from @" + fromHandle)
+				tc.outgoingFaves <- Favorite{
+					senderHandle:    fromHandle,
+					originalTweetId: tweetId,
+				}
 			}
 			// Only if we could figure out a punified version of the tweet, continue
 			if isPunified {
 				tweetId := tweet.Id
-				fromName := tweet.User.Name
 				// Send the response
-				params := url.Values{}
-				params.Set("in_reply_to_status_id", strconv.FormatInt(tweetId, 10))
-				_, err := tc.api.PostTweet("@"+fromHandle+" \""+responseTweet+"\" #owled", params)
-				if err != nil {
-					log.Println("Could not post a reply:", err)
-				} else {
-					log.Println("New tweet from " + fromName + ":\n-> \"" + tweetText + "\"\n<- \"" + responseTweet + "\"\n")
+				tc.outgoingReplies <- Reply{
+					tweetText:       ("@" + fromHandle + " \"" + responseTweet + "\" #owled"),
+					senderHandle:    fromHandle,
+					originalTweetId: strconv.FormatInt(tweetId, 10),
 				}
 			}
 		}
