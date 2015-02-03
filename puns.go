@@ -14,11 +14,13 @@ var (
 		"all":   "OWL",
 		"All":   "OWL",
 		"al":    "OWL",
-		"ol":    "OWL",
+		"aul":   "OWL",
+		"awl":   "OWL",
 		"Al":    "OWL",
 		"I'll":  "OWL",
 		"about": "abHOOT",
 		"About": "AbHOOT",
+		"oot":   "HOOT",
 	}
 	// Black-listed puns
 	exceptionMap = map[string]string{
