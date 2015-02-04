@@ -31,16 +31,7 @@ var (
 	exceptionMap = map[string]string{
 		"reOWL":     "real",
 		"ReOWL":     "Real",
-		"tOWLk":     "talk",
-		"TOWLk":     "Talk",
-		"chOWLk":    "chalk",
-		"ChOWLk":    "Chalk",
-		"stOWLk":    "stalk",
-		"StOWLk":    "Stalk",
-		"wOWLk":     "walk",
-		"WOWLk":     "Walk",
-		"bOWLk":     "balk",
-		"BOWLk":     "Balk",
+		"OWLk":      "alk",
 		"disembOWL": "disembowel", //plsno
 	}
 )
