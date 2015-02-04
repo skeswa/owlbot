@@ -18,14 +18,30 @@ var (
 		"awl":   "OWL",
 		"Al":    "OWL",
 		"I'll":  "OWL",
+		"Howl":  "OWL",
+		"howl":  "OWL",
+		"foul":  "OWL",
+		"Foul":  "OWL",
+		"owel":  "OWL",
 		"about": "abHOOT",
 		"About": "AbHOOT",
 		"oot":   "HOOT",
 	}
 	// Black-listed puns
 	exceptionMap = map[string]string{
-		"reOWL": "real",
-		"tOWLk": "talk",
+		"reOWL":     "real",
+		"ReOWL":     "Real",
+		"tOWLk":     "talk",
+		"TOWLk":     "Talk",
+		"chOWLk":    "chalk",
+		"ChOWLk":    "Chalk",
+		"stOWLk":    "stalk",
+		"StOWLk":    "Stalk",
+		"wOWLk":     "walk",
+		"WOWLk":     "Walk",
+		"bOWLk":     "balk",
+		"BOWLk":     "Balk",
+		"disembOWL": "disembowel", //plsno
 	}
 )
 
